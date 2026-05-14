@@ -84,7 +84,7 @@ a:hover { color: var(--brand-900); text-decoration: underline; text-underline-of
   position: relative;
 }
 .hero::before {
-  content: "MONTHLY REPORT";
+  content: "CONSULTING REPORT";
   display: block;
   font-family: var(--font-sans);
   font-size: 11px;
@@ -340,7 +340,7 @@ button[type="submit"]:disabled {
   position: relative;
 }
 .admin-topbar::before {
-  content: "ADMIN · MONTHLY REPORT";
+  content: "ADMIN · CONSULTING REPORT";
   position: absolute;
   top: -2px;
   left: 0;
