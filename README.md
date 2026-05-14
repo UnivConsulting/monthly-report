@@ -16,7 +16,8 @@
 │   ├── admin.js            # 관리자 페이지 로직
 │   ├── config.js           # SUPABASE_URL / ANON_KEY (배포 전 교체)
 │   └── style.css
-├── _headers                # Cloudflare Pages 보안 헤더 (CSP 등)
+├── CNAME                   # GitHub Pages 커스텀 도메인
+├── .nojekyll               # GitHub Pages Jekyll 처리 비활성화
 └── supabase/
     ├── schema.sql          # reports/admins 테이블 + RPC + RLS
     ├── config.toml         # Supabase CLI 설정
@@ -123,7 +124,7 @@ select public.upsert_report(
 ```
 SQL 로 등록할 경우 PDF 는 Storage > `reports` 버킷에 같은 경로로 직접 업로드.
 
-## 2) 프론트엔드 배포 (Cloudflare Pages)
+## 2) 프론트엔드 배포 (GitHub Pages)
 
 ### 2-1. config 채우기
 [`assets/config.js`](assets/config.js) 의 `SUPABASE_URL`, `SUPABASE_ANON_KEY` 를 실제 값으로 교체.
@@ -131,16 +132,43 @@ SQL 로 등록할 경우 PDF 는 Storage > `reports` 버킷에 같은 경로로 
 > 이 두 값은 공개되어도 안전한 값입니다. 진짜 비밀(service_role 키)은
 > Edge Function 환경에만 존재하며, 브라우저에는 절대 들어가지 않습니다.
 
-### 2-2. Cloudflare Pages 연결
-1. Cloudflare Dashboard > Workers & Pages > Create > Pages > Connect to Git
-2. 이 저장소 선택
-3. 빌드 설정:
-   - Framework preset: **None**
-   - Build command: 비워두기
-   - Build output directory: `/` (또는 비워두기)
-4. 배포 후 **Custom domain** 에 `report.univconsulting.kr` 추가
+### 2-2. 저장소 푸시
+```bash
+git add -A
+git commit -m "deploy"
+git push origin main
+```
 
-`_headers` 파일이 자동으로 적용되어 CSP / HSTS 등 보안 헤더가 설정됩니다.
+저장소가 `private` 이어도 GitHub Pages 가 활성화돼 있으면 정적 호스팅은 잘 동작합니다.
+(단, Free 플랜에서 private repo + Pages 는 trafficreserved 한도가 있을 수 있음 — 월말 리포트 트래픽이라면 무관합니다.)
+
+### 2-3. GitHub Pages 활성화
+1. GitHub 저장소 > **Settings** > **Pages**
+2. **Source**: `Deploy from a branch`
+3. **Branch**: `main` / `/ (root)` → **Save**
+4. **Custom domain**: `report.univconsulting.kr` 입력 → **Save**
+   (저장소 루트의 [`CNAME`](CNAME) 파일이 같은 값으로 이미 들어 있어 GitHub 가 곧바로 인식)
+5. DNS 가 잡힌 뒤 **Enforce HTTPS** 체크 (TLS 인증서 자동 발급, 최대 1시간)
+
+### 2-4. DNS 설정
+`univconsulting.kr` 도메인 DNS 에 다음 레코드 추가:
+```
+Type:   CNAME
+Host:   report
+Target: <GITHUB-USERNAME>.github.io
+TTL:    300 (기본값)
+```
+조직 저장소면 `<ORG>.github.io`. 어느 쪽이든 `.github.io` 가 끝에 붙어야 합니다.
+
+DNS 가 전파되면 (`dig report.univconsulting.kr` 로 확인) GitHub Pages 가 자동으로
+Let's Encrypt TLS 인증서를 발급하고 `https://report.univconsulting.kr` 가 라이브가 됩니다.
+
+### 2-5. 보안 헤더
+GitHub Pages 는 `_headers` 같은 커스텀 HTTP 헤더 파일을 지원하지 않으므로,
+CSP / Referrer-Policy 는 [`index.html`](index.html) · [`admin.html`](admin.html) 의
+`<meta http-equiv="Content-Security-Policy">` 와 `<meta name="referrer">` 로 인라인 적용됩니다.
+
+HSTS 는 GitHub Pages 가 커스텀 도메인 HTTPS Enforce 활성화 시 자동으로 설정합니다.
 
 ## 3) 동작 확인
 
@@ -173,4 +201,4 @@ https://report.univconsulting.kr/admin.html
 - Storage: private 버킷. 학생 접근은 Edge Function 이 발급한 10분짜리 signed URL 로만, admin 은 RLS 정책을 통해 직접 업로드.
 - service_role 키: Edge Function 내부에만 존재, 브라우저로 절대 노출되지 않음.
 - 관리자 OAuth: `read:org` scope 만 요청. 코드/저장소 접근 권한 없음.
-- 무차별 대입 대응: 필요 시 학생용 `get-report` 함수에 Cloudflare Turnstile / 시도 횟수 제한을 추가하세요.
+- 무차별 대입 대응: 필요 시 학생용 `get-report` 함수에 시도 횟수 제한 / hCaptcha 등을 추가하세요.
