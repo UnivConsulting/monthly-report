@@ -1,0 +1,20 @@
+# Supabase CLI
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# 환경 변수
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node (편의용)
+node_modules/

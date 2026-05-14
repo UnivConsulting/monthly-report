@@ -1,0 +1,12 @@
+# Supabase CLI 프로젝트 설정
+# `supabase init` 으로 자동 생성되는 파일의 핵심만 담아둔 최소 버전.
+
+project_id = "monthly-report"
+
+[functions.get-report]
+# 클라이언트가 anon 키 없이 직접 호출하므로 JWT 검증 비활성화
+verify_jwt = false
+
+[functions.admin-login]
+# 함수 내부에서 직접 JWT 를 검증 (auth.getUser) 하므로 외부 verify_jwt 비활성화
+verify_jwt = false

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>리포트 관리 · 유니브컨설팅</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <main class="container container-wide">
+    <header class="admin-topbar">
+      <h1>리포트 관리</h1>
+      <div class="topbar-right">
+        <span id="user-badge" class="user-badge hidden"></span>
+        <button type="button" id="logout-btn" class="btn-secondary hidden">로그아웃</button>
+      </div>
+    </header>
+
+    <div id="error-banner" class="error-banner hidden" role="alert"></div>
+
+    <!-- 초기 부트스트랩 -->
+    <section id="boot-section" class="card center-card">
+      <span class="spinner" aria-hidden="true"></span>
+      <p class="muted">확인 중…</p>
+    </section>
+
+    <!-- 1. 로그인 필요 -->
+    <section id="login-section" class="card center-card hidden">
+      <h2>관리자 로그인</h2>
+      <p class="muted">
+        GitHub 계정으로 로그인해 주세요.<br />
+        <strong>UnivConsulting</strong> 오가니제이션 활성 멤버만 접근할 수 있습니다.
+      </p>
+      <button type="button" id="login-btn" class="btn-github">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub으로 로그인
+      </button>
+    </section>
+
+    <!-- 2. 권한 없음 -->
+    <section id="denied-section" class="card center-card hidden">
+      <h2>접근 권한이 없습니다</h2>
+      <p class="muted">
+        UnivConsulting 오가니제이션의 활성 멤버 계정으로만 접근할 수 있습니다.
+      </p>
+      <p class="muted small">
+        조직 멤버라면 GitHub 설정 → Applications 에서 OAuth 앱에 조직 접근을 승인했는지 확인해 주세요.
+      </p>
+      <button type="button" id="denied-logout-btn" class="btn-secondary">다른 계정으로 로그인</button>
+    </section>
+
+    <!-- 3. 관리자 UI -->
+    <section id="admin-section" class="hidden">
+      <div class="card">
+        <h2>리포트 등록 / 수정</h2>
+        <p class="muted small">
+          동일한 리포트ID로 등록하면 기존 리포트가 덮어쓰기 됩니다.
+        </p>
+
+        <form id="report-form" class="report-form" autocomplete="off">
+          <div class="grid-2">
+            <div class="field">
+              <label for="rf-report-id">리포트ID</label>
+              <input id="rf-report-id" type="text" required placeholder="예: 202605-honggildong" />
+              <small class="muted">URL <code>?code=</code> 값. 영문/숫자/하이픈 권장.</small>
+            </div>
+            <div class="field">
+              <label for="rf-password">접속 비밀번호</label>
+              <input id="rf-password" type="text" required placeholder="학생에게 전달할 비밀번호" />
+            </div>
+            <div class="field">
+              <label for="rf-student-name">학생명</label>
+              <input id="rf-student-name" type="text" required placeholder="홍길동" />
+            </div>
+            <div class="field">
+              <label for="rf-report-title">리포트 제목</label>
+              <input id="rf-report-title" type="text" required placeholder="2026년 5월 월말 리포트" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="rf-pdf">PDF 파일</label>
+            <input id="rf-pdf" type="file" accept="application/pdf" required />
+            <small class="muted">최대 50MB. 같은 리포트ID로 재업로드하면 PDF도 덮어쓰기됩니다.</small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="form-submit">등록</button>
+            <button type="reset" class="btn-secondary">초기화</button>
+            <span id="form-status" class="muted small"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>등록된 리포트</h2>
+          <button type="button" id="refresh-btn" class="btn-text">새로고침</button>
+        </div>
+        <div class="table-wrap">
+          <table class="reports-table">
+            <thead>
+              <tr>
+                <th>리포트ID</th>
+                <th>학생명</th>
+                <th>제목</th>
+                <th>최근 수정</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reports-list">
+              <tr><td colspan="5" class="muted center">불러오는 중…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+  <script src="/assets/config.js" defer></script>
+  <script src="/assets/admin.js" defer></script>
+</body>
+</html>
