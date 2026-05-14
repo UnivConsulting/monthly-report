@@ -54,7 +54,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_row public.reports;
@@ -96,7 +96,7 @@ create or replace function public.upsert_report(
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   insert into public.reports (report_id, password_hash, student_name, report_title, pdf_path)
@@ -184,7 +184,7 @@ create or replace function public.admin_upsert_report(
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   if not public.is_admin() then
