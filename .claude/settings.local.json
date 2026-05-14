@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL \"https://univconsulting.kr/univ/h1\" -A \"Mozilla/5.0\")"
+    ]
+  }
+}
