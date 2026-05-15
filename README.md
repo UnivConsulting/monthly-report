@@ -9,24 +9,36 @@
 
 ```
 .
-├── index.html              # 비밀번호 입력 + PDF 뷰어
-├── admin.html              # 관리자 등록 페이지 (GitHub OAuth)
-├── assets/
-│   ├── app.js              # 학생용 인증 + 뷰어 로직
-│   ├── admin.js            # 관리자 페이지 로직
-│   ├── config.js           # SUPABASE_URL / ANON_KEY (배포 전 교체)
-│   └── style.css
-├── CNAME                   # GitHub Pages 커스텀 도메인
-├── .nojekyll               # GitHub Pages Jekyll 처리 비활성화
+├── app/
+│   ├── layout.tsx              # 공통 레이아웃 + CSP meta + 폰트
+│   ├── page.tsx                # 학생 페이지 (Suspense 래퍼)
+│   ├── admin/
+│   │   └── page.tsx            # 관리자 페이지 진입
+│   ├── _components/
+│   │   ├── StudentClient.tsx   # 학생용 비번 입력 + PDF 뷰어
+│   │   └── AdminClient.tsx     # 관리자 페이지 클라이언트 로직
+│   └── globals.css             # 디자인 시스템 (네이비/골드/크림)
+├── lib/
+│   └── supabase.ts             # Supabase 클라이언트 (싱글톤)
+├── public/
+│   ├── CNAME                   # GitHub Pages 커스텀 도메인
+│   └── .nojekyll               # Jekyll 처리 비활성화
+├── .env                        # NEXT_PUBLIC_SUPABASE_URL / ANON_KEY (공개 안전)
+├── .github/workflows/deploy.yml # main push → Pages 자동 배포
+├── next.config.mjs             # output: 'export', trailingSlash: true
 └── supabase/
-    ├── schema.sql          # reports/admins 테이블 + RPC + RLS
-    ├── config.toml         # Supabase CLI 설정
+    ├── schema.sql              # reports/admins 테이블 + RPC + RLS
+    ├── config.toml             # Supabase CLI 설정
     └── functions/
         ├── get-report/
-        │   └── index.ts    # 학생용: 비번 검증 + signed URL 발급
+        │   └── index.ts        # 학생용: 비번 검증 + signed URL 발급
         └── admin-login/
-            └── index.ts    # 관리자용: GitHub org 멤버십 검증
+            └── index.ts        # 관리자용: GitHub org 멤버십 검증
 ```
+
+Next.js 15 App Router · static export(`output: 'export'`) · pnpm.
+백엔드(Supabase)는 그대로, 프론트만 Next.js 로 변환. 산출물은 정적 HTML/JS 라
+GitHub Pages 가 그대로 서빙합니다.
 
 ## 동작 흐름
 
@@ -124,33 +136,60 @@ select public.upsert_report(
 ```
 SQL 로 등록할 경우 PDF 는 Storage > `reports` 버킷에 같은 경로로 직접 업로드.
 
-## 2) 프론트엔드 배포 (GitHub Pages)
+## 2) 프론트엔드 (Next.js 정적 export → GitHub Pages)
 
-### 2-1. config 채우기
-[`assets/config.js`](assets/config.js) 의 `SUPABASE_URL`, `SUPABASE_ANON_KEY` 를 실제 값으로 교체.
+### 2-1. 로컬 개발
+[`.env.example`](.env.example) 을 복사해 `.env.local` 을 만들고 값을 채우세요.
 
-> 이 두 값은 공개되어도 안전한 값입니다. 진짜 비밀(service_role 키)은
-> Edge Function 환경에만 존재하며, 브라우저에는 절대 들어가지 않습니다.
-
-### 2-2. 저장소 푸시
 ```bash
-git add -A
-git commit -m "deploy"
+cp .env.example .env.local
+# 편집 후
+pnpm install
+pnpm dev          # http://localhost:3000
+```
+
+`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 두 값만 있으면 됩니다
+(공개되어도 안전한 anon 키). 진짜 비밀(service_role 키)은 Edge Function 환경에만
+존재하며 브라우저에는 절대 들어가지 않습니다.
+
+### 2-2. 빌드
+```bash
+pnpm build        # out/ 디렉토리에 정적 HTML/JS 생성
+```
+
+`next.config.mjs` 의 `output: 'export'` + `trailingSlash: true` 로
+GitHub Pages 가 잘 서빙하는 정적 산출물이 만들어집니다
+(`/` → `index.html`, `/admin/` → `admin/index.html`).
+
+### 2-3. 배포 (자동)
+`main` 브랜치에 push 하면 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+가 자동으로 빌드 → Pages 에 업로드합니다.
+
+```bash
 git push origin main
 ```
 
-저장소가 `private` 이어도 GitHub Pages 가 활성화돼 있으면 정적 호스팅은 잘 동작합니다.
-(단, Free 플랜에서 private repo + Pages 는 trafficreserved 한도가 있을 수 있음 — 월말 리포트 트래픽이라면 무관합니다.)
+### 2-4. GitHub 저장소 설정 (한 번만)
 
-### 2-3. GitHub Pages 활성화
+**Pages 활성화**
+
 1. GitHub 저장소 > **Settings** > **Pages**
-2. **Source**: `Deploy from a branch`
-3. **Branch**: `main` / `/ (root)` → **Save**
-4. **Custom domain**: `report.univconsulting.kr` 입력 → **Save**
-   (저장소 루트의 [`CNAME`](CNAME) 파일이 같은 값으로 이미 들어 있어 GitHub 가 곧바로 인식)
-5. DNS 가 잡힌 뒤 **Enforce HTTPS** 체크 (TLS 인증서 자동 발급, 최대 1시간)
+2. **Source**: `GitHub Actions` 선택 (워크플로 기반 배포)
+3. **Custom domain**: `report.univconsulting.kr` 입력 → **Save**
+   ([`public/CNAME`](public/CNAME) 이 빌드 산출물에 같이 들어가므로 GitHub 가 자동 인식)
+4. DNS 가 잡힌 뒤 **Enforce HTTPS** 체크 (TLS 인증서 자동 발급, 최대 1시간)
 
-### 2-4. DNS 설정
+**Actions Secrets 등록** (빌드 시 환경변수 주입)
+
+`Settings` > **Secrets and variables** > **Actions** > `New repository secret` 으로
+다음 두 개를 등록:
+
+- `NEXT_PUBLIC_SUPABASE_URL` — `.env.local` 의 동일 값
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — `.env.local` 의 동일 값
+
+(anon 키는 공개되어도 안전하지만, .env 가 깃에 올라가지 않으므로 CI 가 빌드할 때 주입해야 합니다.)
+
+### 2-5. DNS 설정
 `univconsulting.kr` 도메인 DNS 에 다음 레코드 추가:
 ```
 Type:   CNAME
@@ -163,10 +202,10 @@ TTL:    300 (기본값)
 DNS 가 전파되면 (`dig report.univconsulting.kr` 로 확인) GitHub Pages 가 자동으로
 Let's Encrypt TLS 인증서를 발급하고 `https://report.univconsulting.kr` 가 라이브가 됩니다.
 
-### 2-5. 보안 헤더
+### 2-6. 보안 헤더
 GitHub Pages 는 `_headers` 같은 커스텀 HTTP 헤더 파일을 지원하지 않으므로,
-CSP / Referrer-Policy 는 [`index.html`](index.html) · [`admin.html`](admin.html) 의
-`<meta http-equiv="Content-Security-Policy">` 와 `<meta name="referrer">` 로 인라인 적용됩니다.
+CSP / Referrer-Policy 는 [`app/layout.tsx`](app/layout.tsx) 에서
+`<meta http-equiv="Content-Security-Policy">` 와 metadata `referrer` 로 인라인 적용됩니다.
 
 HSTS 는 GitHub Pages 가 커스텀 도메인 HTTPS Enforce 활성화 시 자동으로 설정합니다.
 

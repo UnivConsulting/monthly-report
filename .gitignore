@@ -16,5 +16,13 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Node (편의용)
+# Node
 node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts.bak
+
+# TypeScript
+*.tsbuildinfo
