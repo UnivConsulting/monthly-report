@@ -101,74 +101,71 @@ export default function StudentClient() {
     }
   };
 
+  if (data) {
+    return (
+      <div className="viewer-fullscreen">
+        <header className="viewer-bar">
+          <div className="viewer-meta">
+            <p className="muted small">
+              {data.student_name ? `${data.student_name} 학생` : ""}
+            </p>
+            <h2>{data.report_title || "월말 리포트"}</h2>
+          </div>
+          <a
+            href={data.pdf_url}
+            target="_blank"
+            rel="noopener"
+            className="btn-secondary"
+          >
+            새 창에서 열기
+          </a>
+        </header>
+        <iframe
+          src={data.pdf_url}
+          title="리포트 PDF"
+          referrerPolicy="no-referrer"
+          className="viewer-iframe w-screen h-screen"
+        />
+      </div>
+    );
+  }
+
   return (
     <>
-      {!data && (
-        <header className="hero">
-          <h1>유니브컨설팅 리포트</h1>
-        </header>
-      )}
+      <header className="hero">
+        <h1>유니브컨설팅 리포트</h1>
+      </header>
       <main className="container">
-        {!data && (
-          <section className="card">
-            <h2>접속 비밀번호</h2>
-            <p className="muted">리포트와 함께 전달드린 비밀번호를 입력해 주세요.</p>
+        <section className="card">
+          <h2>접속 비밀번호</h2>
+          <p className="muted">리포트와 함께 전달드린 비밀번호를 입력해 주세요.</p>
 
-            <form onSubmit={onSubmit} autoComplete="off" noValidate>
-              <label className="sr-only" htmlFor="password">
-                비밀번호
-              </label>
-              <input
-                ref={passwordRef}
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="one-time-code"
-                placeholder="비밀번호"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                aria-describedby="error-msg"
-              />
-              <button type="submit" disabled={loading}>
-                리포트 열기
-              </button>
-              {error && (
-                <p id="error-msg" className="error" role="alert">
-                  {error}
-                </p>
-              )}
-            </form>
-          </section>
-        )}
-
-        {data && (
-          <section className="viewer" aria-live="polite">
-            <div className="viewer-header">
-              <div className="viewer-meta">
-                <p className="muted small">
-                  {data.student_name ? `${data.student_name} 학생` : ""}
-                </p>
-                <h2>{data.report_title || "월말 리포트"}</h2>
-              </div>
-              <a
-                href={data.pdf_url}
-                target="_blank"
-                rel="noopener"
-                className="btn-secondary"
-              >
-                새 창에서 열기
-              </a>
-            </div>
-            <div className="viewer-frame-wrap">
-              <iframe
-                src={data.pdf_url}
-                title="리포트 PDF"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          </section>
-        )}
+          <form onSubmit={onSubmit} autoComplete="off" noValidate>
+            <label className="sr-only" htmlFor="password">
+              비밀번호
+            </label>
+            <input
+              ref={passwordRef}
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="one-time-code"
+              placeholder="비밀번호"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-describedby="error-msg"
+            />
+            <button type="submit" disabled={loading}>
+              리포트 열기
+            </button>
+            {error && (
+              <p id="error-msg" className="error" role="alert">
+                {error}
+              </p>
+            )}
+          </form>
+        </section>
 
         {loading && (
           <div className="loading" aria-live="polite">

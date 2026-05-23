@@ -276,6 +276,42 @@ button[type="submit"]:disabled {
   display: block;
 }
 
+/* 전체화면 PDF 뷰어 */
+.viewer-fullscreen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  z-index: 10;
+}
+.viewer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid var(--zinc-300);
+}
+.viewer-bar .viewer-meta { gap: 2px; }
+.viewer-bar .viewer-meta h2 { font-size: 1.1rem; }
+.viewer-bar .viewer-meta .small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--brand-600);
+  margin: 0;
+}
+.viewer-iframe {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+  display: block;
+}
+
 /* ============================================================
    로딩 / 유틸
    ============================================================ */

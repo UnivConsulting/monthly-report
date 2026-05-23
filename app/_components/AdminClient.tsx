@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSupabase, SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase";
+import {
+  getSupabase,
+  IS_DEV_BYPASS,
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+} from "@/lib/supabase";
 
 const BUCKET = "reports";
 const ADMIN_LOGIN_ENDPOINT = `${SUPABASE_URL}/functions/v1/admin-login`;
@@ -64,6 +69,13 @@ export default function AdminClient() {
   const bootstrap = useCallback(async () => {
     setError(null);
     setView("boot");
+
+    if (IS_DEV_BYPASS) {
+      setHandle("dev");
+      setView("admin");
+      void loadReports();
+      return;
+    }
 
     const sb = getSupabase();
     const {
@@ -221,7 +233,8 @@ export default function AdminClient() {
       }
 
       setFormStatus("리포트 정보 저장 중…");
-      const { error: rpcErr } = await sb.rpc("admin_upsert_report", {
+      const rpcName = IS_DEV_BYPASS ? "upsert_report" : "admin_upsert_report";
+      const { error: rpcErr } = await sb.rpc(rpcName, {
         p_report_id: id,
         p_password: password,
         p_student_name: sName,
